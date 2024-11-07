@@ -1,0 +1,36 @@
+name: Deploy to Kubernetes Cluster
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - task_*
+
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+
+env:
+  TERRAFORM_VERSION: '1.9.6'
+  AWS_GHA_ROLE: 'arn:aws:iam::035511759406:role/GithubActionsRole'
+  AWS_REGION: 'us-east-1'
+
+jobs:
+  terraform-check:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.7
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+          
+      - name: Set up Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          cat ~/.kube/config
