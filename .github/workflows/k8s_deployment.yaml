@@ -24,25 +24,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.1.7
 
-      - name: Set up kubectl
+      - name: Setup kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: 'latest'
 
-      - name: Install Helm
+      - name: Install helm
         run: |
           curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
           
-      - name: Set up Kubeconfig
+      - name: Setup kubeconfig
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
           chmod 600 ~/.kube/config
 
-      - name: Check Kubernetes Nodes
+      - name: Check k8s nodes
         run: |
           kubectl get nodes
 
-      # - name: Deploy using Helm
-      #   run: |
-      #     helm upgrade --install app-chart ./Chart
+      - name: Deploy of chart using helm
+        run: |
+          helm upgrade --install app-chart ./Chart
