@@ -18,7 +18,7 @@ env:
   AWS_REGION: 'us-east-1'
 
 jobs:
-  terraform-check:
+  k8s:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
@@ -28,9 +28,21 @@ jobs:
         uses: azure/setup-kubectl@v3
         with:
           version: 'latest'
+
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
           
       - name: Set up Kubeconfig
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
-          cat ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Check Kubernetes Nodes
+        run: |
+          kubectl get nodes
+
+      # - name: Deploy using Helm
+      #   run: |
+      #     helm upgrade --install app-chart ./Chart
