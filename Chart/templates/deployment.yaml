@@ -21,3 +21,10 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.deployment.port }}
+          volumeMounts:
+            - name: {{ .Values.persistence.name }}
+              mountPath: /var/www/html
+      volumes:
+        - name: {{ .Values.persistence.name }}
+          persistentVolumeClaim:
+            claimName: {{ .Chart.Name }}

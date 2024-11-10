@@ -5,6 +5,11 @@ image:
 deployment:
   port: 80
   replicas: 1
+persistence:
+  enabled: true
+  name: wordpress-storage
+  accessMode: ReadWriteOnce
+  size: 8Gi
 service:
   type: LoadBalancer
   port: 80
