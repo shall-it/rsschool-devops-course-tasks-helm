@@ -43,7 +43,7 @@ jobs:
         run: |
           kubectl get nodes
 
-      - name: Check if Helm release exists
+      - name: Check if Helm release 'app-chart' exists
         id: helm_status
         run: |
           if helm list | grep -q 'app-chart'; then
@@ -69,6 +69,19 @@ jobs:
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo update
       
-      - name: Install stateful MySQL via helm
+      - name: Check if Helm release 'mysql' exists
+        id: helm_status
         run: |
-          helm install mysql bitnami/mysql --set auth.rootPassword="${{ secrets.MYSQL_PASSWORD }}",auth.database=wordpress
+          if helm list | grep -q 'mysql'; then
+            echo "::set-output name=exists::true"
+          else
+            echo "::set-output name=exists::false"
+          fi
+      
+      - name: Install stateful MySQL via helm if needed
+        run: |
+          if [ "${{ steps.helm_status.outputs.exists }}" != "true" ]; then
+            helm install mysql bitnami/mysql --set auth.rootPassword="${{ secrets.MYSQL_PASSWORD }}",auth.database=wordpress
+          else
+            echo "MySQL is already installed. Skipping installation."
+          fi
