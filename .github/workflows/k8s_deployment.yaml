@@ -43,6 +43,24 @@ jobs:
         run: |
           kubectl get nodes
 
-      - name: Deploy of chart using helm
+      - name: Check if Helm release exists
+        id: helm_status
         run: |
-          helm upgrade --install app-chart ./Chart
+          if helm list | grep -q 'app-chart'; then
+            echo "::set-output name=exists::true"
+          else
+            echo "::set-output name=exists::false"
+          fi
+
+      - name: Upgrade or Install Helm Chart
+        run: |
+          if [ "${{ steps.helm_status.outputs.exists }}" == "true" ]; then
+            helm upgrade app-chart ./Chart
+          else
+            helm install app-chart ./Chart
+          fi
+
+      - name: Getting of public URL
+        run: |
+          kubectl get svc app-chart-wordpress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+
