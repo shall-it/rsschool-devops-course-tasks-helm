@@ -64,3 +64,11 @@ jobs:
         run: |
           kubectl get svc app-chart-wordpress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 
+      - name: Add MySQL helm repo
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo update
+      
+      - name: Install stateful MySQL via helm
+        run: |
+          helm install mysql bitnami/mysql --set auth.rootPassword="${{ secrets.MYSQL_PASSWORD }}",auth.database=wordpress
