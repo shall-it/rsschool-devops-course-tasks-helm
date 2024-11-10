@@ -44,7 +44,7 @@ jobs:
           kubectl get nodes
 
       - name: Check if Helm release 'app-chart' exists
-        id: helm_status
+        id: helm_status_app
         run: |
           if helm list | grep -q 'app-chart'; then
             echo "::set-output name=exists::true"
@@ -54,7 +54,7 @@ jobs:
 
       - name: Upgrade or Install Helm Chart
         run: |
-          if [ "${{ steps.helm_status.outputs.exists }}" == "true" ]; then
+          if [ "${{ steps.helm_status_app.outputs.exists }}" == "true" ]; then
             helm upgrade app-chart ./Chart
           else
             helm install app-chart ./Chart
@@ -70,7 +70,7 @@ jobs:
           helm repo update
       
       - name: Check if Helm release 'mysql' exists
-        id: helm_status
+        id: helm_status_mysql
         run: |
           if helm list | grep -q 'mysql'; then
             echo "::set-output name=exists::true"
@@ -80,7 +80,7 @@ jobs:
       
       - name: Install stateful MySQL via helm if needed
         run: |
-          if [ "${{ steps.helm_status.outputs.exists }}" != "true" ]; then
+          if [ "${{ steps.helm_status_mysql.outputs.exists }}" != "true" ]; then
             helm install mysql bitnami/mysql --set auth.rootPassword="${{ secrets.MYSQL_PASSWORD }}",auth.database=wordpress
           else
             echo "MySQL is already installed. Skipping installation."
