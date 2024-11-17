@@ -1,0 +1,87 @@
+name: Deploy to Kubernetes Cluster
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - task_*
+
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+
+env:
+  TERRAFORM_VERSION: '1.9.6'
+  AWS_GHA_ROLE: 'arn:aws:iam::035511759406:role/GithubActionsRole'
+  AWS_REGION: 'us-east-1'
+
+jobs:
+  k8s:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.7
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Install helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+          
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Check k8s nodes
+        run: |
+          kubectl get nodes
+
+      - name: Check if Helm release 'app-chart' exists
+        id: helm_status_app
+        run: |
+          if helm list | grep -q 'app-chart'; then
+            echo "::set-output name=exists::true"
+          else
+            echo "::set-output name=exists::false"
+          fi
+
+      - name: Upgrade or Install Helm Chart
+        run: |
+          if [ "${{ steps.helm_status_app.outputs.exists }}" == "true" ]; then
+            helm upgrade app-chart ./Chart
+          else
+            helm install app-chart ./Chart
+          fi
+
+      - name: Getting of public URL
+        run: |
+          kubectl get svc app-chart-wordpress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+
+      - name: Add MySQL helm repo
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo update
+      
+      - name: Check if Helm release 'mysql' exists
+        id: helm_status_mysql
+        run: |
+          if helm list | grep -q 'mysql'; then
+            echo "::set-output name=exists::true"
+          else
+            echo "::set-output name=exists::false"
+          fi
+      
+      - name: Install stateful MySQL via helm if needed
+        run: |
+          if [ "${{ steps.helm_status_mysql.outputs.exists }}" != "true" ]; then
+            helm install mysql bitnami/mysql --set auth.rootPassword="${{ secrets.MYSQL_PASSWORD }}",auth.database=wordpress
+          else
+            echo "MySQL is already installed. Skipping installation."
+          fi
